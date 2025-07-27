@@ -320,7 +320,7 @@ To my wife Misa, thank you for walking this life with me.”</span>
 妻の美紗、共に人生を歩んでくれてありがとう.</span>
       </div>
       <!-- Artist 表示部分の修正 -->
-      <div class="bilingual-line">
+      <div class="bilingual-line" id="artist-target">
         <span class="en">Artist Shingo<br>Sawada</span>
         <span class="ja">アーティスト<br>澤田真吾</span>
       </div>
@@ -431,10 +431,11 @@ To my wife Misa, thank you for walking this life with me.”</span>
   </div>
   <!-- ハンバーガーメニューのドロップダウン -->
   <div id="hamburger-menu">
-    <!-- メニュー項目の順番：about, exhibition, Soup, その下に言語切替リンク群 -->
+    <!-- メニュー項目の順番：about, exhibition, Soup, artist, (空行) EN, DE -->
     <div class="menu-item" data-target="about">about</div>
     <div class="menu-item" data-target="exhibition">exhibition</div>
     <div class="menu-item" data-target="soup">Soup</div>
+    <div class="menu-item" data-target="artist">artist</div>
     <div class="lang-container">
       <div class="menu-item lang active" data-lang="en">EN</div>
       <div class="menu-item lang" data-lang="de">DE</div>
@@ -742,6 +743,8 @@ To my wife Misa, thank you for walking this life with me.”</span>
           targetPos = document.getElementById('exhibitions-content').offsetTop;
         } else if (target === 'soup') {
           targetPos = document.getElementById('soup-target').offsetTop;
+        } else if (target === 'artist') {
+          targetPos = document.getElementById('artist-target').offsetTop;
         }
         scrollToPosition(targetPos, 800);
       });
