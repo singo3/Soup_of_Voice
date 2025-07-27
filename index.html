@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Soup of Voice (Inverted)</title>
+  <style>
+    /*────────────────────────────────────────────
+      基本スタイル（html, body, canvas, スクロールコンテンツ）
+    ────────────────────────────────────────────*/
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;  /* 独自スクロール方式 */
+    }
+    body {
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", "IPA Mincho", serif;
+      color: #ccc;
+    }
+    /* キャンバス（多角形アニメーション用） */
+    canvas {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      z-index: 0;
+      transition: cursor 0.3s ease;
+    }
+    /* スクロールコンテンツ */
+    #scroll-container {
+      position: relative;
+      transform: translateY(0);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .spacer {
+      height: 120vh;
+    }
+    .hero-title {
+      font-size: 3rem;
+      margin: 1.5rem auto 0;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 3s ease, transform 3s ease;
+      max-width: 80%;
+    }
+    .hero-title.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    /* 本来のレイアウト通り本文 */
+    .content {
+      max-width: 800px;
+      margin: 20rem auto 0 auto;
+      padding: 2rem;
+      line-height: 1.8;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 3s ease, transform 3s ease;
+    }
+    .content.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .bilingual-line {
+      margin-bottom: 1.2rem;
+    }
+    .bilingual-line span {
+      display: block;
+    }
+    .bilingual-line .en {
+      font-size: 1rem;
+      color: #aaa;
+      margin-bottom: 0.3rem;
+    }
+    .bilingual-line .ja {
+      font-size: 1rem;
+      color: #eee;
+    }
+    .section-heading {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 0 0 2.5rem 0;
+      line-height: 1.2;
+    }
+    .section-heading .en {
+      color: #aaa;
+    }
+    .section-heading .ja {
+      color: #eee;
+      margin-top: 0.5rem;
+      display: inline-block;
+    }
+    .events {
+      margin: 4rem auto 0 auto;
+      max-width: 800px;
+      padding: 2rem;
+    }
+    .event-block {
+      margin: 3rem 0;
+    }
+    .event-block .bilingual-line {
+      margin-bottom: 0.4rem;
+    }
+    .bottom-spacer {
+      height: 200vh;
+    }
+    /* Soup セクションのターゲット */
+    #soup-target {
+      height: 200vh;
+    }
+    /* スクロールヒント（下誘導マーク）の位置を上に変更 */
+    #scroll-hint {
+      display: none;
+      position: fixed;
+      bottom: 40px;  /* もともとの 20px から変更 */
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 3rem;
+      color: #ccc;
+      z-index: 10;
+      user-select: none;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    #scroll-hint.show {
+      display: block;
+      animation: arrow-blink 0.5s ease-in-out 3 alternate;
+    }
+    @keyframes arrow-blink {
+      0% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    /*────────────────────────────────────────────
+      #tap-hint のスタイル（主要メッセージと補足説明）
+    ────────────────────────────────────────────*/
+    #tap-hint {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: fixed;
+      top: 70%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      color: #fff;
+      font-size: 1rem;
+      background: none;
+      padding: 0;
+      border-radius: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 1s ease, visibility 1s ease;
+      z-index: 20;
+      pointer-events: none;
+    }
+    #tap-hint.show {
+      visibility: visible;
+      opacity: 1;
+    }
+    #tap-hint .primary {
+      text-align: center;
+      width: 100%;
+      max-width: 500px;
+      white-space: nowrap;
+    }
+    /* 英語部分のフォントサイズを 1.4rem に */
+    #tap-hint .primary .en {
+      font-size: 1.4rem;
+    }
+    /* 日本語部分は 1rem */
+    #tap-hint .primary .ja {
+      font-size: 1rem;
+    }
+    #tap-hint .desc {
+      text-align: center;
+      width: 100%;
+      max-width: 800px;
+      font-size: 0.8rem;
+      margin-top: 1rem;
+      white-space: nowrap;
+    }
+    @media (max-width: 800px) {
+      #tap-hint .primary,
+      #tap-hint .desc {
+        white-space: normal;
+      }
+    }
+    #tap-hint .primary div,
+    #tap-hint .desc div {
+      display: block;
+      text-align: center;
+    }
+    /*────────────────────────────────────────────
+      ハンバーガーメニューのスタイル（ミートボールとフェードイン効果）
+    ────────────────────────────────────────────*/
+    #hamburger {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      z-index: 30;
+      opacity: 0;  /* 初期状態は透明 */
+      transition: opacity 0.5s ease;
+    }
+    #hamburger.visible {
+      opacity: 1;
+    }
+    #hamburger div {
+      width: 5px;
+      height: 5px;
+      background: #fff;
+      border-radius: 50%;
+      margin: 4px auto;
+    }
+    /* ハンバーガーメニューのドロップダウン（右揃え、フェードイン・アウト） */
+    #hamburger-menu {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      z-index: 30;
+      text-align: right;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #hamburger-menu.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    /* メニュー項目：右揃え */
+    #hamburger-menu .menu-item {
+      margin: 5px 0;
+      cursor: pointer;
+      text-align: right;
+    }
+    /* 言語切替リンク用：太文字 */
+    #hamburger-menu .lang {
+      font-weight: bold;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    /* 現在選択中の言語にアンダーライン */
+    #hamburger-menu .lang.active {
+      text-decoration: underline;
+    }
+    /* 言語切替リンク群をまとめるコンテナ（Soup と言語切替リンク群の間に余白） */
+    #hamburger-menu .lang-container {
+      margin-top: 10px;
+    }
+    /* ★ ojikoen-link はクリック可能にするため pointer-events を有効化 */
+    .ojikoen-link {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- キャンバス（多角形アニメーション） -->
+  <canvas id="canvas"></canvas>
+  
+  <!-- スクロールコンテンツ -->
+  <div id="scroll-container">
+    <div class="spacer"></div>
+    <div id="sov-title" class="hero-title">Soup of Voice</div>
+    <div class="content" id="main-content">
+      <!-- About セクション -->
+      <div class="bilingual-line">
+        <span class="en">Soup of Voice is a project aimed at preserving people’s wishes for the future.</span>
+        <span class="ja">スープ・オブ・ボイスは、人々の遺志を未来に残すプロジェクトです。</span>
+      </div>
+      <div class="bilingual-line">
+        <span class="en">Rather than leaving behind physical objects, I decided to preserve people’s intentions in the form of voice.</span>
+        <span class="ja">私は、物ではなく、声という形で、人々の遺志を残そうと思います。</span>
+      </div>
+      <div class="bilingual-line">
+        <span class="en">A voice can separate itself from both consciousness and body, and it serves as an excellent medium that conveys both linguistic and non-linguistic information.</span>
+        <span class="ja">声は、意識と身体から離れることができ、言語情報と非言語情報を兼ね備えた優れたメディウムです。</span>
+      </div>
+      <div class="bilingual-line">
+        <span class="en">With Soup of Voice, each person has only one chance in their lifetime to record a 10-second voice message they wish to leave for the future.</span>
+        <span class="ja">スープ・オブ・ボイスは、人生でたった一度、未来に残したい声を10秒間、録音することができます。</span>
+      </div>
+      <div class="bilingual-line">
+        <span class="en">A 10-second mono WAV file is 882 KB, so even if we collected the voices of all eight billion people on Earth, it would amount to just 7,056 TB.</span>
+        <span class="ja">10秒のモノラルWAVファイルで882KB、世界の人口80億人の声を集めたとしても、たった7056TBです。</span>
+      </div>
+      <div class="bilingual-line">
+        <span class="en">I plan to continue Soup of Voice until I die.</span>
+        <span class="ja">私は、死ぬまでスープ・オブ・ボイスを続けようと思います。</span>
+      </div>
+      <div class="bilingual-line">
+        <span class="en">When I pass away, I will entrust this “soup of voices” to my son, Harunosuke, who will inherit it within the Sawada family for generations, ensuring it endures even after humanity is gone.</span>
+        <span class="ja">私が死んだら、息子の孟ノ佑（はるのすけ）にこの声のスープを託し、沢田家末代まで継承し、人類が滅んだ後も残します。</span>
+      </div>
+      <div class="bilingual-line">
+        <span class="en">On August 29, 2021, I dropped the very first droplet into this “soup” as follows:</span>
+        <span class="ja">2021年8月29日、私は次のようにスープの最初の一滴を落としました。</span>
+      </div>
+      <div class="bilingual-line">
+        <span class="en">“Mom and Dad, thank you for giving birth to me.
+To my child, thank you for coming into this world.
+To my wife Misa, thank you for walking this life with me.”</span>
+        <span class="ja">お父さんお母さん、産んでくれてありがとう.
+僕の子供、生まれてきてくれてありがとう.
+妻の美紗、共に人生を歩んでくれてありがとう.</span>
+      </div>
+      <!-- Artist 表示部分の修正 -->
+      <div class="bilingual-line">
+        <span class="en">Artist Shingo<br>Sawada</span>
+        <span class="ja">アーティスト<br>澤田真吾</span>
+      </div>
+    </div>
+    <div class="events" id="exhibitions-content">
+      <!-- Exhibition セクション -->
+      <h2 class="section-heading">
+        <span class="en">exhibition</span><br>
+        <span class="ja">展示</span>
+      </h2>
+      <div class="event-block">
+        <div class="bilingual-line">
+          <span class="en">October 2021</span>
+          <span class="ja">2021年10月</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">37.5° Exhibition (Tokyo)</span>
+          <span class="ja">37.5°展 （東京）</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">Soup of Voice – Genesis –</span>
+          <span class="ja">Soup of Voice - 発生 -</span>
+        </div>
+      </div>
+      <div class="event-block">
+        <div class="bilingual-line">
+          <span class="en">December 2021</span>
+          <span class="ja">2021年12月</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">SIGGRAPH Asia 2021 (Tokyo)</span>
+          <span class="ja">SIGGRAPH Asia 2021（東京）</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">Soup of Voice – Core –</span>
+          <span class="ja">Soup of Voice - 核 -</span>
+        </div>
+      </div>
+      <div class="event-block">
+        <div class="bilingual-line">
+          <span class="en">August 2022</span>
+          <span class="ja">2022年8月</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">The Space Where You Become Media Art (Nagoya)</span>
+          <span class="ja">あなたがメディアートになる空間（名古屋）</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">Soup of Voice – the gate –</span>
+          <span class="ja">Soup of Voice - the gate -</span>
+        </div>
+      </div>
+      <div class="event-block">
+        <div class="bilingual-line">
+          <span class="en">October 2023</span>
+          <span class="ja">2023年10月</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">Oji Koen (Kobe)</span>
+          <span class="ja">王子公園（神戸）</span>
+        </div>
+        <!-- ojikoen-link クラスを追加 -->
+        <div class="bilingual-line ojikoen-link">
+          <span class="en">Soup of Voice – Oji Park –</span>
+          <span class="ja">Soup of Voice - ōji kōen -</span>
+        </div>
+      </div>
+      <div class="event-block">
+        <div class="bilingual-line">
+          <span class="en">December 2023</span>
+          <span class="ja">2023年12月</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">Reema Square (Frankfurt)</span>
+          <span class="ja">レーマー広場（フランクフルト）</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">Soup of Voice – Eternity –</span>
+          <span class="ja">Soup of Voice - ewigkeit -</span>
+        </div>
+      </div>
+      <div class="event-block">
+        <div class="bilingual-line">
+          <span class="en">October 2024</span>
+          <span class="ja">2024年10月</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">1st Anniversary Memorial Oji Park (Kobe)</span>
+          <span class="ja">1周年メモリアル 王子公園（神戸）</span>
+        </div>
+        <div class="bilingual-line">
+          <span class="en">Soup of Voice – Oji Park –</span>
+          <span class="ja">Soup of Voice - ōji kōen -</span>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-spacer" id="soup-target"></div>
+  </div>
+  
+  <!-- スクロールヒント -->
+  <div id="scroll-hint">⌵</div>
+  
+  <!-- ハンバーガーメニュー（ミートボール） -->
+  <div id="hamburger">
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+  <!-- ハンバーガーメニューのドロップダウン -->
+  <div id="hamburger-menu">
+    <!-- メニュー項目の順番：about, exhibition, Soup, その下に言語切替リンク群 -->
+    <div class="menu-item" data-target="about">about</div>
+    <div class="menu-item" data-target="exhibition">exhibition</div>
+    <div class="menu-item" data-target="soup">Soup</div>
+    <div class="lang-container">
+      <div class="menu-item lang active" data-lang="en">EN</div>
+      <div class="menu-item lang" data-lang="de">DE</div>
+    </div>
+  </div>
+  
+  <!-- #tap-hint -->
+  <div id="tap-hint">
+    <div class="primary">
+      <div class="en">Tap to listen to Soup</div>
+      <div class="ja">タップしてスープを聞く</div>
+    </div>
+    <div class="desc">
+      <div class="en">The 600 voices of legacy, gathered from previous Soup of Voice exhibitions, will be played.</div>
+      <div class="ja">これまでのSoup of Voiceの展示にて重ねられた600の遺志の声が再生されます。</div>
+    </div>
+  </div>
+  
+  <script>
+    // DOM要素の取得
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const mainContent = document.getElementById('main-content');
+    const exhibitionsContent = document.getElementById('exhibitions-content');
+    const tapHint = document.getElementById('tap-hint');
+    const scrollHint = document.getElementById('scroll-hint');
+    const hamburger = document.getElementById('hamburger');
+    const hamburgerMenu = document.getElementById('hamburger-menu');
+    
+    // audio の定義
+    const audio = new Audio('original_soup_reverb.wav');
+    audio.loop = true;
+    audio.volume = 0.5;
+    
+    // about セクションの英語部分の元テキストを保存（最初の9行）
+    const aboutEnSpans = document.querySelectorAll('#main-content .bilingual-line .en');
+    const originalEnTexts = Array.from(aboutEnSpans).map(span => span.innerText);
+    
+    // exhibition セクションの英語部分の元テキストを保存（#exhibitions-content 内の全 .en）
+    const exhibitionEnSpans = document.querySelectorAll('#exhibitions-content .en');
+    const exhibitionOriginalTexts = Array.from(exhibitionEnSpans).map(span => span.innerText);
+    
+    // ドイツ語テキストの配列（exhibition セクション：全19個の要素）
+    const exhibitionGermanTexts = [
+      "Ausstellung",
+      "Oktober 2021", "37,5° Ausstellung (Tokio)", "Soup of Voice – Entstehung –",
+      "Dezember 2021", "SIGGRAPH Asia 2021 (Tokio)", "Soup of Voice – Kern –",
+      "August 2022", "Der Raum, in dem du zur Medienkunst wirst (Nagoya)", "Soup of Voice – das Tor –",
+      "Oktober 2023", "Prinzenpark (Kobe)", "Soup of Voice – Prinzenpark –",
+      "Dezember 2023", "Rema-Platz (Frankfurt)", "Soup of Voice – Ewigkeit –",
+      "Oktober 2024", "1. Jahrestag-Memorial: Prinzenpark (Kobe)", "Soup of Voice – Prinzenpark –"
+    ];
+    
+    // ドイツ語テキスト用 about セクションの配列（最初の9行）
+    const germanTextsAbout = [
+      "Soup of Voice ist ein Projekt, das das Vermächtnis der Menschen in die Zukunft überträgt.",
+      "Ich habe vor, das Vermächtnis der Menschen nicht in Dingen, sondern in Form von Stimme zu hinterlassen.",
+      "Die Stimme ist ein hervorragendes Medium, da sie sich vom Bewusstsein und Körper lösen kann und sowohl sprachliche als auch nonverbale Informationen in sich vereint.",
+      "Mit Soup of Voice kann man einmal im Leben für 10 Sekunden die Stimme aufnehmen, die man für die Zukunft bewahren möchte.",
+      "Eine 10-Sekunden lange monaurale WAV-Datei umfasst 882 KB – selbst wenn man die Stimmen von 8 Milliarden Menschen sammelt, ergibt das nur 7056 TB.",
+      "Ich werde Soup of Voice bis zu meinem Tod fortführen.",
+      "Wenn ich sterbe, werde ich diese „Voice Soup" meinem Sohn Meng no Yuu (Harunosuke) anvertrauen, sodass sie in der Familie Sawada bis zur letzten Generation weitergegeben wird und auch nach dem Untergang der Menschheit erhalten bleibt.",
+      "Am 29. August 2021 habe ich den ersten Tropfen des Soups wie folgt hinterlassen:",
+      "Papa, Mama, danke, dass ihr mich zur Welt gebracht habt.\nMein Kind, danke, dass du geboren wurdest.\nMeine Frau Misa, danke, dass du diesen Lebensweg mit mir gegangen bist."
+    ];
+    
+    //────────────────────────────────────────────
+    // キャンバス & 多角形アニメーション
+    //────────────────────────────────────────────
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    let minSides = 5, maxSides = 20;
+    let vertexCount = 0;
+    let baseRadius = 100;
+    let polygonVertices = [];
+    const flickerDuration = 1500;
+    const flickerStart = performance.now();
+    let flickerActive = true;
+    
+    let fillActive = false;
+    let oldFillActive = false;
+    let fillProgress = 0;
+    let fillStartTime = 0;
+    const fillDuration = 1000;
+    
+    function initPolygon() {
+      vertexCount = Math.floor(Math.random() * (maxSides - minSides + 1)) + minSides;
+      baseRadius = 80 + Math.random() * 120;
+      polygonVertices = [];
+      for (let i = 0; i < vertexCount; i++) {
+        const baseAngle = (2 * Math.PI * i) / vertexCount;
+        const angleOffset = (Math.random() - 0.5) * 0.6;
+        const radiusOffset = (Math.random() - 0.5) * 40;
+        polygonVertices.push({ baseAngle, angleOffset, radiusOffset });
+      }
+    }
+    initPolygon();
+    
+    function updatePolygon() {
+      if (Math.random() < 0.005) initPolygon();
+      baseRadius += (Math.random() - 0.5) * 3;
+      if (baseRadius < 50) baseRadius = 50;
+      if (baseRadius > 300) baseRadius = 300;
+      polygonVertices.forEach(v => {
+        if (Math.random() < 0.1) v.angleOffset += (Math.random() - 0.5) * 0.6;
+        if (Math.random() < 0.1) v.radiusOffset += (Math.random() - 0.5) * 10;
+        if (v.radiusOffset < -60) v.radiusOffset = -60;
+        if (v.radiusOffset > 60) v.radiusOffset = 60;
+        if (v.angleOffset < -1) v.angleOffset = -1;
+        if (v.angleOffset > 1) v.angleOffset = 1;
+      });
+    }
+    
+    let lineAlpha = 1;
+    let polygonPath = null;
+    function getCoords(i) {
+      const { baseAngle, angleOffset, radiusOffset } = polygonVertices[i];
+      const angle = baseAngle + angleOffset;
+      const r = baseRadius + radiusOffset;
+      return {
+        x: canvas.width / 2 + Math.cos(angle) * r,
+        y: canvas.height / 2 + Math.sin(angle) * r
+      };
+    }
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      updatePolygon();
+      const now = performance.now();
+      if (flickerActive) {
+        if (now - flickerStart < flickerDuration) {
+          lineAlpha = (Math.random() < 0.3) ? 0 : 0.7 + Math.random() * 0.3;
+        } else {
+          flickerActive = false;
+          lineAlpha = 0.6;
+        }
+      } else {
+        lineAlpha += (Math.random() - 0.5) * 0.2;
+        if (lineAlpha < 0.05) lineAlpha = 0.05;
+        if (lineAlpha > 1) lineAlpha = 1;
+      }
+      if (fillActive !== oldFillActive) {
+        if (fillActive) {
+          fillStartTime = now;
+          fillProgress = 0;
+        } else {
+          fillProgress = 0;
+        }
+        oldFillActive = fillActive;
+      }
+      let fillOpacity = 0;
+      if (fillActive) {
+        const elapsed = now - fillStartTime;
+        fillProgress = Math.min(1, elapsed / fillDuration);
+        fillOpacity = lineAlpha * fillProgress;
+      }
+      polygonPath = new Path2D();
+      const p0 = getCoords(0);
+      polygonPath.moveTo(p0.x, p0.y);
+      for (let i = 1; i < vertexCount; i++) {
+        const p = getCoords(i);
+        polygonPath.lineTo(p.x, p.y);
+      }
+      polygonPath.closePath();
+      ctx.strokeStyle = `rgba(255,255,255,${lineAlpha})`;
+      ctx.lineWidth = 2;
+      ctx.stroke(polygonPath);
+      if (fillActive) {
+        ctx.fillStyle = `rgba(255,255,255,${fillOpacity})`;
+        ctx.fill(polygonPath);
+      }
+      checkHover();
+      updateFillState();
+    }
+    animate();
+    
+    //────────────────────────────────────────────
+    // updateFillState 関数
+    // 最後のイベントブロックの下端がウィンドウ上部から50px以下になったら #tap-hint を表示する
+    //────────────────────────────────────────────
+    function updateFillState() {
+      const lastEvent = document.querySelector('#exhibitions-content .event-block:last-child');
+      if (!lastEvent) return;
+      const lastRect = lastEvent.getBoundingClientRect();
+      const newFillActive = (lastRect.bottom < 50);
+      if (newFillActive !== fillActive) {
+        fillActive = newFillActive;
+        if (fillActive) {
+          tapHint.classList.add('show');
+        } else {
+          tapHint.classList.remove('show');
+          if (audioPlaying && typeof fadeOutAudio === 'function') {
+            fadeOutAudio(1000, () => {
+              audioPlaying = false;
+              checkHover();
+            });
+          }
+        }
+      }
+    }
+    
+    //────────────────────────────────────────────
+    // 独自スクロール処理
+    //────────────────────────────────────────────
+    let scrollPos = 0;
+    function clampScroll() {
+      const maxScroll = document.getElementById('scroll-container').scrollHeight - window.innerHeight;
+      if (scrollPos < 0) scrollPos = 0;
+      if (scrollPos > maxScroll) scrollPos = maxScroll;
+    }
+    function updateScroll() {
+      document.getElementById('scroll-container').style.transform = `translateY(${-scrollPos}px)`;
+    }
+    window.addEventListener('wheel', e => {
+      e.preventDefault();
+      scrollPos += e.deltaY * 0.1;
+      clampScroll();
+      updateScroll();
+      checkFade();
+      updateHamburger();
+      // スクロール中はハンバーガーメニューをフェードアウトする
+      if (hamburgerMenu.classList.contains('visible')) {
+        hamburgerMenu.classList.remove('visible');
+      }
+    }, { passive: false });
+    
+    //────────────────────────────────────────────
+    // スクロールによる表示切替
+    //────────────────────────────────────────────
+    function checkFade() {
+      if (scrollPos > 150) {
+        document.getElementById('sov-title').classList.add('show');
+      }
+      if (scrollPos > 600) {
+        mainContent.classList.add('show');
+      }
+    }
+    
+    //────────────────────────────────────────────
+    // スムーズスクロールの関数
+    //────────────────────────────────────────────
+    function scrollToPosition(target, duration) {
+      const start = scrollPos;
+      const change = target - start;
+      const startTime = performance.now();
+      function animateScroll(now) {
+        const elapsed = now - startTime;
+        const t = elapsed / duration;
+        const easedT = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+        scrollPos = start + change * easedT;
+        clampScroll();
+        updateScroll();
+        checkFade();
+        updateHamburger();
+        if (elapsed < duration) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          scrollPos = target;
+          clampScroll();
+          updateScroll();
+          checkFade();
+          updateHamburger();
+        }
+      }
+      requestAnimationFrame(animateScroll);
+    }
+    
+    //────────────────────────────────────────────
+    // ハンバーガーメニュー関連
+    //────────────────────────────────────────────
+    let manualHamburger = false;
+    function updateHamburger() {
+      if (scrollPos > 150) manualHamburger = false;
+      if (scrollPos > 150 || manualHamburger) {
+        hamburger.classList.add('visible');
+      } else {
+        hamburger.classList.remove('visible');
+        hamburgerMenu.classList.remove('visible');
+      }
+    }
+    hamburger.addEventListener('click', () => {
+      if (hamburgerMenu.classList.contains('visible')) {
+        hamburgerMenu.classList.remove('visible');
+      } else {
+        hamburgerMenu.classList.add('visible');
+      }
+    });
+    const menuItems = document.querySelectorAll('#hamburger-menu .menu-item');
+    menuItems.forEach(item => {
+      item.addEventListener('click', () => {
+        // 言語切替は別処理
+        if (item.classList.contains('lang')) return;
+        hamburgerMenu.classList.remove('visible');
+        const target = item.getAttribute('data-target');
+        let targetPos = 0;
+        if (target === 'about') {
+          targetPos = mainContent.offsetTop;
+        } else if (target === 'exhibition') {
+          targetPos = document.getElementById('exhibitions-content').offsetTop;
+        } else if (target === 'soup') {
+          targetPos = document.getElementById('soup-target').offsetTop;
+        }
+        scrollToPosition(targetPos, 800);
+      });
+    });
+    
+    //────────────────────────────────────────────
+    // 言語切替処理
+    //────────────────────────────────────────────
+    const langButtons = document.querySelectorAll('#hamburger-menu .lang');
+    langButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // すべての言語ボタンから active クラスを除去
+        langButtons.forEach(btn => btn.classList.remove('active'));
+        // クリックされたボタンに active クラスを追加
+        button.classList.add('active');
+        const selectedLang = button.getAttribute('data-lang'); // "en" または "de"
+        if (selectedLang === 'de') {
+          // about セクション：英語部分をドイツ語に変更（最初の9行）
+          aboutEnSpans.forEach((span, index) => {
+            if (index < germanTextsAbout.length) {
+              span.innerText = germanTextsAbout[index];
+            }
+          });
+          // exhibition セクション：全ての英語部分をドイツ語に変更
+          exhibitionEnSpans.forEach((span, index) => {
+            span.innerText = exhibitionGermanTexts[index];
+          });
+        } else {
+          // "en" の場合、元の英語テキストに戻す
+          aboutEnSpans.forEach((span, index) => {
+            span.innerText = originalEnTexts[index];
+          });
+          exhibitionEnSpans.forEach((span, index) => {
+            span.innerText = exhibitionOriginalTexts[index];
+          });
+        }
+        // メニューを閉じる
+        hamburgerMenu.classList.remove('visible');
+      });
+    });
+    
+    //────────────────────────────────────────────
+    // オーディオ再生 & ホバー処理（キャンバス）
+    //────────────────────────────────────────────
+    let audioPlaying = false;
+    let isFadingIn = false;
+    let isFadingOut = false;
+    const playCursorUrl = "url('data:image/svg+xml;utf8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2732%27 height=%2732%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2725%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273%27/%3E%3Cpolygon fill=%27black%27 points=%2724,20 24,44 44,32%27/%3E%3C/svg%3E') 10 10, pointer";
+    const pauseCursorUrl = "url('data:image/svg+xml;utf8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2732%27 height=%2732%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2725%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273%27/%3E%3Crect x=%2724%27 y=%2722%27 width=%276%27 height=%2720%27 fill=%27black%27/%3E%3Crect x=%2734%27 y=%2722%27 width=%276%27 height=%2720%27 fill=%27black%27/%3E%3C/svg%3E') 10 10, pointer";
+    
+    function fadeInAudio(duration, callback) {
+      if (isFadingIn) return;
+      isFadingIn = true;
+      audio.volume = 0;
+      audio.play();
+      const start = performance.now();
+      function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        audio.volume = progress * 0.5;
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          isFadingIn = false;
+          if (callback) callback();
+        }
+      }
+      requestAnimationFrame(step);
+    }
+    
+    function fadeOutAudio(duration, callback) {
+      if (isFadingOut) return;
+      isFadingOut = true;
+      const startVolume = audio.volume;
+      const start = performance.now();
+      function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        audio.volume = startVolume * (1 - progress);
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          audio.pause();
+          isFadingOut = false;
+          if (callback) callback();
+        }
+      }
+      requestAnimationFrame(step);
+    }
+    
+    function checkHover() {
+      if (!fillActive || !polygonPath) {
+        canvas.style.cursor = 'default';
+        return;
+      }
+      if (ctx.isPointInPath(polygonPath, mouseX, mouseY)) {
+        canvas.style.cursor = audioPlaying ? pauseCursorUrl : playCursorUrl;
+      } else {
+        canvas.style.cursor = 'default';
+      }
+    }
+    let mouseX = 0, mouseY = 0;
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+      checkHover();
+    });
+    canvas.addEventListener('click', () => {
+      if (fillActive && ctx.isPointInPath(polygonPath, mouseX, mouseY)) {
+        if (!audioPlaying) {
+          fadeInAudio(1000, () => {
+            audioPlaying = true;
+            checkHover();
+          });
+        } else {
+          fadeOutAudio(1000, () => {
+            audioPlaying = false;
+            checkHover();
+          });
+        }
+      }
+      // トップでクリックした際にハンバーガーを表示
+      if (scrollPos <= 150) {
+        manualHamburger = true;
+        updateHamburger();
+      }
+    });
+    
+    //────────────────────────────────────────────
+    // スクロールヒントの表示
+    //────────────────────────────────────────────
+    function showScrollHint() {
+      if (!document.getElementById('sov-title').classList.contains('show') &&
+          !mainContent.classList.contains('show')) {
+        scrollHint.classList.add('show');
+        scrollHint.style.opacity = '0';
+        setTimeout(() => {
+          scrollHint.style.opacity = '1';
+        }, 50);
+        setTimeout(() => {
+          scrollHint.style.opacity = '0';
+          setTimeout(() => {
+            scrollHint.classList.remove('show');
+          }, 1000);
+        }, 2050);
+      }
+    }
+    scrollHint.style.opacity = '0';
+    window.addEventListener('click', showScrollHint);
+    window.addEventListener('touchstart', showScrollHint);
+    
+    //────────────────────────────────────────────
+    // 「Soup of Voice – Oji Park – / Soup of Voice - ōji kōen -」をクリックしたら新しいタブで指定URLを開く
+    //────────────────────────────────────────────
+    const ojikoenLinks = document.querySelectorAll('.ojikoen-link');
+    ojikoenLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        // クリックイベントの伝播を止める
+        e.stopPropagation();
+        window.open('https://soupofvoice-ojikoen.vercel.app/', '_blank');
+      });
+    });
+    
+  </script>
+</body>
+</html>
