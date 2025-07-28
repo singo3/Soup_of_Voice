@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artist - Soup of Voice</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #ccc;
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", "IPA Mincho", serif;
+    }
+    .container {
+      max-width: 800px;
+      margin: 5rem auto;
+      padding: 2rem;
+      line-height: 1.8;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      color: #eee;
+      margin-bottom: 2rem;
+    }
+    .bilingual-line {
+      margin-bottom: 1.2rem;
+    }
+    .bilingual-line span {
+      display: block;
+    }
+    .bilingual-line .en {
+      font-size: 1rem;
+      color: #aaa;
+      margin-bottom: 0.3rem;
+    }
+    .bilingual-line .ja {
+      font-size: 1rem;
+      color: #eee;
+    }
+    .back-link {
+      display: block;
+      text-align: center;
+      color: #ccc;
+      margin-top: 3rem;
+      text-decoration: none;
+    }
+    /*────────────────────────────────────────────
+      ハンバーガーメニューのスタイル（index と同じ）
+    ────────────────────────────────────────────*/
+    #hamburger {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      z-index: 30;
+      opacity: 0;  /* index ではスクロール後に表示 */
+      transition: opacity 0.5s ease;
+    }
+    #hamburger.visible {
+      opacity: 1;
+    }
+    #hamburger div {
+      width: 5px;
+      height: 5px;
+      background: #fff;
+      border-radius: 50%;
+      margin: 4px auto;
+    }
+    #hamburger-menu {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      z-index: 30;
+      text-align: right;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #hamburger-menu.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    #hamburger-menu .menu-item {
+      margin: 5px 0;
+      cursor: pointer;
+      text-align: right;
+    }
+    #hamburger-menu .lang {
+      font-weight: bold;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    #hamburger-menu .lang.active {
+      text-decoration: underline;
+    }
+    #hamburger-menu .lang-container {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- ハンバーガーメニュー（常に表示） -->
+  <div id="hamburger" class="visible">
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+  <div id="hamburger-menu" class="visible">
+    <div class="menu-item" data-target="artist">artist</div>
+    <div class="menu-item" data-target="about">about</div>
+    <div class="menu-item" data-target="exhibition">exhibition</div>
+    <div class="menu-item" data-target="soup">Soup</div>
+    <div class="lang-container">
+      <div class="menu-item lang active" data-lang="en">EN</div>
+      <div class="menu-item lang" data-lang="de">DE</div>
+    </div>
+  </div>
+  <div class="container">
+    <h1>Soup of Voice</h1>
+    <div class="bilingual-line">
+      <span class="ja">アーティスト</span>
+      <span class="en">Artist</span>
+    </div>
+    <div class="bilingual-line">
+      <span class="ja">澤田真吾</span>
+      <span class="en">Shingo Sawada</span>
+    </div>
+    <div class="bilingual-line">
+      <span class="ja">現実科学者/サウンドエンジニア/アーティスト</span>
+    </div>
+    <div class="bilingual-line">
+      <span class="ja">聴覚障害者対応の音が見えるデバイスを開発する「株式会社ONTELOPE（オンテロープ）」代表</span>
+    </div>
+    <div class="bilingual-line">
+      <span class="ja">デジタルハリウッド大学院 現実科学ラボ特任助教</span>
+    </div>
+    <div class="bilingual-line">
+      <span class="ja">「nooto SOUND DESIGN」代表</span>
+    </div>
+    <a class="back-link" href="index.html">Back to top</a>
+  </div>
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const hamburgerMenu = document.getElementById('hamburger-menu');
+    hamburger.addEventListener('click', () => {
+      hamburgerMenu.classList.toggle('visible');
+    });
+    const menuItems = document.querySelectorAll('#hamburger-menu .menu-item');
+    menuItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const target = item.getAttribute('data-target');
+        if (target === 'artist') return;
+        window.location.href = 'index.html';
+      });
+    });
+  </script>
+</body>
+</html>
