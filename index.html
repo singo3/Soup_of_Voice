@@ -744,7 +744,8 @@ To my wife Misa, thank you for walking this life with me.”</span>
         } else if (target === 'soup') {
           targetPos = document.getElementById('soup-target').offsetTop;
         } else if (target === 'artist') {
-          targetPos = document.getElementById('artist-target').offsetTop;
+          window.location.href = 'artist.html';
+          return;
         }
         scrollToPosition(targetPos, 800);
       });
