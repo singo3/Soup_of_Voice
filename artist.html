@@ -46,6 +46,63 @@
       margin-top: 3rem;
       text-decoration: none;
     }
+
+    /* \u30cf\u30f3\u30d0\u30fc\u30ac\u30fc\u30e1\u30cb\u30e5\u30fc */
+    #hamburger {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    #hamburger.visible {
+      opacity: 1;
+    }
+    #hamburger div {
+      width: 5px;
+      height: 5px;
+      background: #fff;
+      border-radius: 50%;
+      margin: 4px auto;
+    }
+    #hamburger-menu {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      z-index: 30;
+      text-align: right;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #hamburger-menu.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    #hamburger-menu .menu-item {
+      margin: 5px 0;
+      cursor: pointer;
+      text-align: right;
+    }
+    #hamburger-menu .lang {
+      font-weight: bold;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    #hamburger-menu .lang.active {
+      text-decoration: underline;
+    }
+    #hamburger-menu .lang-container {
+      margin: 20px 0;
+    }
   </style>
 </head>
 <body>
@@ -73,5 +130,45 @@
     </div>
     <a class="back-link" href="index.html">Back to top</a>
   </div>
+
+  <!-- ハンバーガーメニュー (ミートボール) -->
+  <div id="hamburger" class="visible">
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+  <div id="hamburger-menu">
+    <div class="menu-item" data-target="artist">artist</div>
+    <div class="menu-item" data-target="about">about</div>
+    <div class="menu-item" data-target="exhibition">exhibition</div>
+    <div class="menu-item" data-target="soup">Soup</div>
+    <div class="lang-container">
+      <div class="menu-item lang active" data-lang="en">EN</div>
+      <div class="menu-item lang" data-lang="de">DE</div>
+    </div>
+  </div>
+
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const hamburgerMenu = document.getElementById('hamburger-menu');
+    hamburger.addEventListener('click', () => {
+      if (hamburgerMenu.classList.contains('visible')) {
+        hamburgerMenu.classList.remove('visible');
+      } else {
+        hamburgerMenu.classList.add('visible');
+      }
+    });
+    const menuItems = document.querySelectorAll('#hamburger-menu .menu-item');
+    menuItems.forEach(item => {
+      item.addEventListener('click', () => {
+        hamburgerMenu.classList.remove('visible');
+        const target = item.getAttribute('data-target');
+        if (target === 'artist') {
+          return;
+        }
+        window.location.href = 'index.html';
+      });
+    });
+  </script>
 </body>
 </html>
