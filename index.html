@@ -667,6 +667,30 @@ To my wife Misa, thank you for walking this life with me.”</span>
         hamburgerMenu.classList.remove('visible');
       }
     }, { passive: false });
+
+    // スマートフォン向けのタッチスクロール処理
+    let lastTouchY = 0;
+    window.addEventListener('touchstart', e => {
+      if (e.touches.length > 0) {
+        lastTouchY = e.touches[0].clientY;
+      }
+    }, { passive: false });
+    window.addEventListener('touchmove', e => {
+      if (e.touches.length > 0) {
+        const touchY = e.touches[0].clientY;
+        const deltaY = lastTouchY - touchY;
+        lastTouchY = touchY;
+        scrollPos += deltaY;
+        clampScroll();
+        updateScroll();
+        checkFade();
+        updateHamburger();
+        if (hamburgerMenu.classList.contains('visible')) {
+          hamburgerMenu.classList.remove('visible');
+        }
+        e.preventDefault();
+      }
+    }, { passive: false });
     
     //────────────────────────────────────────────
     // スクロールによる表示切替
