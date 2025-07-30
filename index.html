@@ -870,7 +870,12 @@ To my wife Misa, thank you for walking this life with me.”</span>
       if (isFadingIn) return;
       isFadingIn = true;
       audio.volume = 0;
-      audio.play();
+      // iOS Safari などモバイルブラウザでは user gesture が必要なため
+      // play() の結果が Promise で返される場合はエラーを握りつぶす
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {});
+      }
       const start = performance.now();
       function step(now) {
         const progress = Math.min((now - start) / duration, 1);
@@ -958,6 +963,14 @@ To my wife Misa, thank you for walking this life with me.”</span>
         const rect = canvas.getBoundingClientRect();
         mouseX = e.touches[0].clientX - rect.left;
         mouseY = e.touches[0].clientY - rect.top;
+      }
+      // touchstart ではまだ指が離れていないため、再生制御は touchend で行う
+    }, { passive: false });
+    canvas.addEventListener('touchend', e => {
+      if (e.changedTouches.length > 0) {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.changedTouches[0].clientX - rect.left;
+        mouseY = e.changedTouches[0].clientY - rect.top;
       }
       handleCanvasInteraction();
       e.preventDefault();
