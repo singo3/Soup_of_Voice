@@ -464,6 +464,18 @@ To my wife Misa, thank you for walking this life with me.”</span>
     const scrollHint = document.getElementById('scroll-hint');
     const hamburger = document.getElementById('hamburger');
     const hamburgerMenu = document.getElementById('hamburger-menu');
+
+    // デバイス判定に応じて #tap-hint の表示テキストを切り替える
+    const tapHintEn = tapHint.querySelector('.en');
+    const tapHintJa = tapHint.querySelector('.ja');
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/.test(navigator.userAgent);
+    if (isMobile) {
+      tapHintEn.textContent = 'Tap to listen to Soup';
+      tapHintJa.textContent = 'タップしてスープを聞く';
+    } else {
+      tapHintEn.textContent = 'Click to listen to Soup';
+      tapHintJa.textContent = 'クリックしてスープを聞く';
+    }
     
     // audio の定義
     const audio = new Audio('original_soup_reverb.wav');
