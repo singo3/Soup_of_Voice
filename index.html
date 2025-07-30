@@ -956,6 +956,9 @@ To my wife Misa, thank you for walking this life with me.”</span>
       }
     }
     canvas.addEventListener('click', e => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
       handleCanvasInteraction();
     });
     canvas.addEventListener('touchstart', e => {
