@@ -670,16 +670,59 @@ To my wife Misa, thank you for walking this life with me.”</span>
 
     // スマートフォン向けのタッチスクロール処理
     let lastTouchY = 0;
+    let lastTouchTime = 0;
+    let scrollVelocity = 0; // px per ms
+    let inertiaId = null;
+
+    function stopInertia() {
+      if (inertiaId !== null) {
+        cancelAnimationFrame(inertiaId);
+        inertiaId = null;
+      }
+    }
+
+    function startInertia() {
+      stopInertia();
+      const friction = 0.95;
+      let prevTime = performance.now();
+      function step(now) {
+        const dt = now - prevTime;
+        prevTime = now;
+        scrollPos += scrollVelocity * dt;
+        scrollVelocity *= friction;
+        clampScroll();
+        updateScroll();
+        checkFade();
+        updateHamburger();
+        if (Math.abs(scrollVelocity) > 0.02) {
+          inertiaId = requestAnimationFrame(step);
+        } else {
+          inertiaId = null;
+        }
+      }
+      inertiaId = requestAnimationFrame(step);
+    }
+
     window.addEventListener('touchstart', e => {
+      stopInertia();
       if (e.touches.length > 0) {
         lastTouchY = e.touches[0].clientY;
+        lastTouchTime = performance.now();
+        scrollVelocity = 0;
       }
     }, { passive: false });
+
     window.addEventListener('touchmove', e => {
       if (e.touches.length > 0) {
         const touchY = e.touches[0].clientY;
+        const now = performance.now();
         const deltaY = lastTouchY - touchY;
+        const dt = now - lastTouchTime;
+        if (dt > 0) {
+          scrollVelocity = deltaY / dt;
+        }
         lastTouchY = touchY;
+        lastTouchTime = now;
         scrollPos += deltaY;
         clampScroll();
         updateScroll();
@@ -691,6 +734,9 @@ To my wife Misa, thank you for walking this life with me.”</span>
         e.preventDefault();
       }
     }, { passive: false });
+
+    window.addEventListener('touchend', startInertia, { passive: false });
+    window.addEventListener('touchcancel', startInertia, { passive: false });
     
     //────────────────────────────────────────────
     // スクロールによる表示切替
