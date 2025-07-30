@@ -445,8 +445,8 @@ To my wife Misa, thank you for walking this life with me.”</span>
   <!-- #tap-hint -->
   <div id="tap-hint">
     <div class="primary">
-      <div class="en">Tap to listen to Soup</div>
-      <div class="ja">タップしてスープを聞く</div>
+      <div class="en">Click to listen to Soup</div>
+      <div class="ja">クリックしてスープを聞く</div>
     </div>
     <div class="desc">
       <div class="en">The 600 voices of legacy, gathered from previous Soup of Voice exhibitions, will be played.</div>
@@ -468,8 +468,9 @@ To my wife Misa, thank you for walking this life with me.”</span>
     // デバイス判定に応じて #tap-hint の表示テキストを切り替える
     const tapHintEn = tapHint.querySelector('.en');
     const tapHintJa = tapHint.querySelector('.ja');
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/.test(navigator.userAgent);
-    if (isMobile) {
+    const isTouchDevice = (navigator.userAgentData && navigator.userAgentData.mobile) ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet|Windows Phone/i.test(navigator.userAgent);
+    if (isTouchDevice) {
       tapHintEn.textContent = 'Tap to listen to Soup';
       tapHintJa.textContent = 'タップしてスープを聞く';
     } else {
