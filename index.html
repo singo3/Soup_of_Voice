@@ -267,6 +267,13 @@
       pointer-events: auto;
       cursor: pointer;
     }
+
+    /* スマホ表示時は下部に余白を追加して、URLバーで文字が隠れないようにする */
+    @media (max-width: 600px) {
+      #scroll-container {
+        padding-bottom: 15vh;
+      }
+    }
   </style>
 </head>
 <body>
